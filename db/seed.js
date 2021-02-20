@@ -5,10 +5,13 @@ const {
   getUserById,
   getAllPosts,
   getPostsByUser,
+  getPostsByTagName,
   createUser,
   createPost,
   updatePost,
-  updateUser
+  updateUser,
+  addTagsToPost,
+  createTags
 } = require('./index');
 
 const createInitialUsers = async () => {
@@ -47,22 +50,35 @@ const createInitialPosts = async () => {
     await createPost({
       authorId: albert.id,
       title: "First Post",
-      content: "This is my first post. I hope I love writing blogs as much as I love writing them."
+      content: "This is my first post. I hope I love writing blogs as much as I love writing them.",
+      tags: ["#happy","#youcandoanything"]
     });
 
     await createPost({
       authorId: sandra.id,
       title: "Hello, post",
-      content: "This is my first post. I hope I love writing blogs as much as I love writing them."
+      content: "This is my first post. I hope I love writing blogs as much as I love writing them.",
+      tags: ["#happy","#worstdayever","#bestdayever"]
     });
 
     await createPost({
       authorId: glamgal.id,
       title: "Hello, Postgres",
-      content: "This is my first post. I hope I love writing blogs as much as I love writing them."
+      content: "This is my first post. I hope I love writing blogs as much as I love writing them.",
+      tags: ["#happy","#youcandoanything","#catmandoeverything"]
     });
+
+    await createPost({
+      authorId: glamgal.id,
+      title: "Hello, World!",
+      content: "This is my second post. I hope I love writing blogs as much as I love writing them.",
+      tags: ["#redfish","#catmandoeverything"]
+    });
+
+    console.log("Finished creating posts!");
   } catch (err) {
-    console.error(err);
+    console.error("Error creating posts!");
+    throw err;
   }
 }
 
@@ -70,6 +86,8 @@ const dropTables = async () => {
   try {
     console.log("Starting to drop tables...");
     await client.query(`
+      DROP TABLE IF EXISTS post_tags;
+      DROP TABLE IF EXISTS tags;
       DROP TABLE IF EXISTS posts;
       DROP TABLE IF EXISTS users;
     `);
@@ -104,6 +122,21 @@ const createTables = async () => {
         title VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
         active BOOLEAN DEFAULT true
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE tags (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE post_tags (
+        "postId" INTEGER REFERENCES posts(id),
+        "tagId" INTEGER REFERENCES tags(id),
+        UNIQUE ("postId", "tagId")
       );
     `);
 
@@ -154,9 +187,19 @@ const testDB = async () => {
     });
     console.log("Result: ", updatePostResult);
 
+    console.log("Calling updatePost on posts[1], only updating tags");
+    const updatePostTagsResult = await updatePost(posts[1].id, {
+      tags: ["#youcandoanything","#redfish","#bluefish"]
+    });
+    console.log("Result: ", updatePostTagsResult);
+
     console.log("Calling getUserById with 1");
     const albert = await getUserById(1);
     console.log("Result: ", albert);
+
+    console.log("Calling getPostsByTagName with '#redfish'");
+    const postsWithHappy = await getPostsByTagName("#redfish");
+    console.log("Result: ", postsWithHappy);
 
     console.log("Finished database tests!");
   } catch(err) {
