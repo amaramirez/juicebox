@@ -5,11 +5,15 @@ const { Client } = require('pg');
 const client = new Client('postgres://localhost:5432/juicebox-dev');
 
 const getAllUsers = async () => {
-  const { rows } = await client.query(`
-    SELECT id,username,name,location,active FROM users;
-  `);
+  try {
+    const { rows } = await client.query(`
+      SELECT id,username,name,location,active FROM users;
+    `);
 
-  return rows;
+    return rows;
+  } catch (err) {
+    throw err;
+  }
 }
 
 const getUserById = async (userId) => {
@@ -34,12 +38,6 @@ const getUserById = async (userId) => {
 }
 
 const getAllPosts = async () => {
-  /*const { rows } = await client.query(`
-    SELECT id,"authorId",title,content,active FROM posts;
-  `);
-
-  return rows;*/
-
   try {
     const { rows: postIds } = await client.query(`
       SELECT id FROM posts;
@@ -113,6 +111,18 @@ const getPostsByTagName = async (tagName) => {
     return await Promise.all(postIds.map(
       post => getPostById(post.id)
     ));
+  } catch (err) {
+    throw err;
+  }
+}
+
+const getAllTags = async () => {
+  try {
+    const { rows } = await client.query(`
+      SELECT * FROM tags;
+    `);
+
+    return rows;
   } catch (err) {
     throw err;
   }
@@ -288,10 +298,11 @@ module.exports = {
   getAllPosts,
   getPostsByUser,
   getPostsByTagName,
+  getAllTags,
   createUser,
   createPost,
   updatePost,
   updateUser,
   addTagsToPost,
-  createTags
+  createTags,
 }
